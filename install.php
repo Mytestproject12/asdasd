@@ -416,6 +416,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $step == 2) {
             ['maintenance_mode', 'false', 'boolean', 'general', 'Maintenance mode', 0],
             ['registration_enabled', 'true', 'boolean', 'general', 'Allow new registrations', 1],
             ['kyc_required', 'false', 'boolean', 'security', 'Require KYC verification', 1],
+            ['dashboard_welcome_message', 'Welcome back to your investment dashboard!', 'string', 'dashboard', 'Dashboard welcome message', 1],
+            ['dashboard_show_stats', 'true', 'boolean', 'dashboard', 'Show statistics cards', 1],
+            ['dashboard_show_recent_transactions', 'true', 'boolean', 'dashboard', 'Show recent transactions', 1],
+            ['dashboard_show_active_investments', 'true', 'boolean', 'dashboard', 'Show active investments', 1],
+            ['dashboard_announcement', '', 'text', 'dashboard', 'Dashboard announcement message', 1],
+            ['dashboard_announcement_type', 'info', 'string', 'dashboard', 'Dashboard announcement type', 1],
+            ['dashboard_show_announcement', 'false', 'boolean', 'dashboard', 'Show dashboard announcement', 1],
             ['smtp_host', $smtp_host, 'string', 'email', 'SMTP host', 0],
             ['smtp_port', $smtp_port, 'number', 'email', 'SMTP port', 0],
             ['smtp_username', $smtp_username, 'string', 'email', 'SMTP username', 0],
@@ -585,6 +592,11 @@ if (!is_dir(__DIR__ . '/logs')) {
         // Create logs directory
         if (!is_dir('logs')) {
             mkdir('logs', 0755, true);
+        }
+        
+        // Create backups directory
+        if (!is_dir('backups')) {
+            mkdir('backups', 0755, true);
         }
         
         $success = "Installation completed successfully!";
@@ -975,6 +987,9 @@ if (!is_dir(__DIR__ . '/logs')) {
                     <p>✅ Security features: SSL, session management, activity logging</p>
                     <p>✅ Withdrawal system with cryptocurrency support</p>
                     <p>✅ Real-time webhook processing for payments</p>
+                    <p>✅ Database backup and restore system</p>
+                    <p>✅ Dashboard customization settings</p>
+                    <p>✅ Enhanced referral commission tracking</p>
                 </div>
                 
                 <div class="credentials">
@@ -987,6 +1002,8 @@ if (!is_dir(__DIR__ . '/logs')) {
                     <p>6. <strong>Plans:</strong> Adjust investment plans and rates as needed</p>
                     <p>7. <strong>Testing:</strong> Test payment flows and email notifications</p>
                     <p>8. <strong>SSL:</strong> Ensure SSL certificate is properly configured</p>
+                    <p>9. <strong>Backup:</strong> Create your first database backup in Admin → Backup & Restore</p>
+                    <p>10. <strong>Dashboard:</strong> Customize dashboard settings in Admin → Dashboard Settings</p>
                 </div>
                 
                 <a href="<?php echo htmlspecialchars($_POST['site_url']); ?>/admin/" class="btn" style="display: inline-block; text-decoration: none; margin: 15px 10px;">🎛️ Access Admin Panel</a>

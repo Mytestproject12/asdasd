@@ -5,15 +5,21 @@ require_once '../config.php';
 $page_title = 'Investment Plans';
 $user_id = $_SESSION['user_id'];
 
+// Get user data first
+$stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+$stmt->execute([$user_id]);
+$user = $stmt->fetch();
+
+if (!$user) {
+    session_destroy();
+    header('Location: login.php');
+    exit;
+}
+
 // Handle new investment
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invest']) && isset($_POST['plan_id']) && isset($_POST['amount'])) {
     $plan_id = $_POST['plan_id'];
     $amount = floatval($_POST['amount']);
-    
-    // Get user data
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
-    $stmt->execute([$user_id]);
-    $user = $stmt->fetch();
     
     // Get plan details
     $stmt = $pdo->prepare("SELECT * FROM investment_plans WHERE id = ? AND is_active = 1");
@@ -68,6 +74,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invest']) && isset($_
             
             $pdo->commit();
             $success = "Investment created successfully!";
+            
+            // Refresh user data after successful investment
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+            $stmt->execute([$user_id]);
+            $user = $stmt->fetch();
             
         } catch (Exception $e) {
             if ($pdo->inTransaction()) {
@@ -449,6 +460,21 @@ include '../includes/user_layout.php';
                         <p style="color: #666; margin-bottom: 1rem;"><?php echo htmlspecialchars($plan['description']); ?></p>
                     <?php endif; ?>
                     
+                    <?php if ($plan['features']): ?>
+                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                            <ul style="list-style: none; padding: 0; margin: 0;">
+                                <?php 
+                                $features = json_decode($plan['features'], true);
+                                if ($features && is_array($features)) {
+                                    foreach ($features as $feature) {
+                                        echo '<li style="padding: 0.25rem 0; color: #666;"><span style="color: #28a745; margin-right: 0.5rem;">✓</span>' . htmlspecialchars($feature) . '</li>';
+                                    }
+                                }
+                                ?>
+                            </ul>
+                        </div>
+                    <?php endif; ?>
+                    
                     <form method="POST" class="investment-form">
                         <input type="hidden" name="plan_id" value="<?php echo $plan['id']; ?>">
                         <div class="form-group">
@@ -457,7 +483,9 @@ include '../includes/user_layout.php';
                                    max="<?php echo min($plan['max_amount'], $user['balance']); ?>" 
                                    step="0.01" required>
                         </div>
-                        <button type="submit" name="invest" class="btn">Invest Now</button>
+                        <button type="submit" name="invest" class="btn" <?php echo $user['balance'] < $plan['min_amount'] ? 'disabled' : ''; ?>>
+                            <?php echo $user['balance'] < $plan['min_amount'] ? 'Insufficient Balance' : 'Invest Now'; ?>
+                        </button>
                     </form>
                 </div>
             <?php endforeach; ?>

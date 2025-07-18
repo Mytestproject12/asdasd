@@ -35,6 +35,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $_POST['sort_order']
                     ]);
                     $success = 'Investment plan created successfully!';
+                    
+                    // Refresh plans data
+                    $stmt = $pdo->prepare("SELECT * FROM investment_plans ORDER BY sort_order, created_at");
+                    $stmt->execute();
+                    $plans = $stmt->fetchAll();
                 } catch (Exception $e) {
                     $error = 'Failed to create plan: ' . $e->getMessage();
                 }
@@ -62,6 +67,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $_POST['plan_id']
                     ]);
                     $success = 'Investment plan updated successfully!';
+                    
+                    // Refresh plans data
+                    $stmt = $pdo->prepare("SELECT * FROM investment_plans ORDER BY sort_order, created_at");
+                    $stmt->execute();
+                    $plans = $stmt->fetchAll();
                 } catch (Exception $e) {
                     $error = 'Failed to update plan: ' . $e->getMessage();
                 }
@@ -72,6 +82,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt = $pdo->prepare("DELETE FROM investment_plans WHERE id = ?");
                     $stmt->execute([$_POST['plan_id']]);
                     $success = 'Investment plan deleted successfully!';
+                    
+                    // Refresh plans data
+                    $stmt = $pdo->prepare("SELECT * FROM investment_plans ORDER BY sort_order, created_at");
+                    $stmt->execute();
+                    $plans = $stmt->fetchAll();
                 } catch (Exception $e) {
                     $error = 'Failed to delete plan: ' . $e->getMessage();
                 }
@@ -80,10 +95,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Get all investment plans
-$stmt = $pdo->prepare("SELECT * FROM investment_plans ORDER BY sort_order, created_at");
-$stmt->execute();
-$plans = $stmt->fetchAll();
+// Get all investment plans (if not already loaded)
+if (!isset($plans)) {
+    $stmt = $pdo->prepare("SELECT * FROM investment_plans ORDER BY sort_order, created_at");
+    $stmt->execute();
+    $plans = $stmt->fetchAll();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">

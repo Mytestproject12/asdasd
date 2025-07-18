@@ -857,6 +857,12 @@ $site_name = getSetting('site_name', 'Star Router Rent');
                         </a>
                     </div>
                     <div class="nav-item">
+                        <a href="backup-restore.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'backup-restore.php' ? 'active' : ''; ?>">
+                            <i class="fas fa-database"></i>
+                            Backup & Restore
+                        </a>
+                    </div>
+                    <div class="nav-item">
                         <a href="activity-logs.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'activity-logs.php' ? 'active' : ''; ?>">
                             <i class="fas fa-history"></i>
                             Activity Logs

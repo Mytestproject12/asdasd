@@ -16,6 +16,7 @@ class ReferralManager {
      */
     public function processReferralCommission($user_id, $deposit_amount) {
         try {
+            // Get user's referrer chain
             // Get user's referrer
             $stmt = $this->pdo->prepare("SELECT referred_by FROM users WHERE id = ?");
             $stmt->execute([$user_id]);
@@ -25,12 +26,12 @@ class ReferralManager {
                 return false; // No referrer
             }
             
-            // Get referrer details
-            $stmt = $this->pdo->prepare("SELECT id FROM users WHERE referral_code = ? AND status = 'active'");
+            // Get level 1 referrer details
+            $stmt = $this->pdo->prepare("SELECT id, username FROM users WHERE referral_code = ? AND status = 'active'");
             $stmt->execute([$user['referred_by']]);
-            $referrer = $stmt->fetch();
+            $level_1_referrer = $stmt->fetch();
             
-            if (!$referrer) {
+            if (!$level_1_referrer) {
                 return false; // Referrer not found or inactive
             }
             
@@ -43,7 +44,8 @@ class ReferralManager {
             $stmt->execute([$user_id]);
             $deposit_count = $stmt->fetch()['deposit_count'];
             
-            if ($deposit_count > 2) {
+            $max_deposits = intval(getSetting('referral_max_deposits', '2'));
+            if ($deposit_count > $max_deposits) {
                 return false; // Only first 2 deposits earn commission
             }
             
@@ -56,10 +58,10 @@ class ReferralManager {
             
             // Level 1 Commission (Direct referrer)
             $commission_amount = ($deposit_amount * $level_1_rate) / 100;
-            $this->payCommission($referrer['id'], $user_id, $commission_amount, 1, $deposit_amount);
+            $this->payCommission($level_1_referrer['id'], $user_id, $commission_amount, 1, $deposit_amount);
             
             // Level 2 Commission (Referrer's referrer)
-            $level_2_referrer = $this->getReferrer($referrer['id']);
+            $level_2_referrer = $this->getReferrer($level_1_referrer['id']);
             if ($level_2_referrer && $level_2_rate > 0) {
                 $commission_amount = ($deposit_amount * $level_2_rate) / 100;
                 $this->payCommission($level_2_referrer['id'], $user_id, $commission_amount, 2, $deposit_amount);
@@ -89,10 +91,11 @@ class ReferralManager {
      */
     private function getReferrer($user_id) {
         $stmt = $this->pdo->prepare("
-            SELECT u.id, u.referral_code 
+            SELECT u.id, u.referral_code, u.username
             FROM users u 
-            JOIN users referred ON referred.referred_by = u.referral_code 
-            WHERE referred.id = ? AND u.status = 'active'
+            WHERE u.referral_code = (
+                SELECT referred_by FROM users WHERE id = ?
+            ) AND u.status = 'active'
         ");
         $stmt->execute([$user_id]);
         return $stmt->fetch();
@@ -112,17 +115,17 @@ class ReferralManager {
         ");
         $stmt->execute([$commission_amount, $commission_amount, $commission_amount, $referrer_id]);
         
-        // Update referral record
+        // Update or create referral record
         $stmt = $this->pdo->prepare("
             INSERT INTO referrals (id, referrer_id, referred_id, level, commission_rate, total_commission_earned, total_referral_volume, status, created_at)
-            VALUES (?, ?, ?, 1, ?, ?, ?, 'active', NOW())
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'active', NOW())
             ON DUPLICATE KEY UPDATE 
                 total_commission_earned = total_commission_earned + VALUES(total_commission_earned),
                 total_referral_volume = total_referral_volume + VALUES(total_referral_volume)
         ");
         $referral_record_id = generateUUID();
-        $level_1_rate = floatval(getSetting('referral_level_1_rate', '10.0'));
-        $stmt->execute([$referral_record_id, $referrer_id, $referred_user_id, $level_1_rate, $commission_amount, $deposit_amount]);
+        $commission_rate = floatval(getSetting("referral_level_{$level}_rate", '10.0'));
+        $stmt->execute([$referral_record_id, $referrer_id, $referred_user_id, $level, $commission_rate, $commission_amount, $deposit_amount]);
         
         // Create payment record for commission
         $payment_id = generateUUID();
