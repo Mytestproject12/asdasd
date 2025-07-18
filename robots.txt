@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# Disallow sensitive areas
+Disallow: /admin/
+Disallow: /api/
+Disallow: /config.php
+Disallow: /install.php
+Disallow: /logs/
+Disallow: /*.log$
+
+# Sitemap
+Sitemap: https://test.star-rent.vip/sitemap.xml
