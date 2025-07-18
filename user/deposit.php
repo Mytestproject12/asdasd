@@ -69,7 +69,6 @@ if (isset($_POST['create_crypto_deposit'])) {
             $plisio_payment = $plisio_gateway->createInvoice($payment_params);
             
             if ($plisio_payment && isset($plisio_payment['invoice_url'])) {
-                $payment_id = generateUUID();
                 $stmt = $pdo->prepare("
                     UPDATE payments 
                     SET transaction_id = ?, gateway_data = ? 
